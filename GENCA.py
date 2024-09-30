@@ -24,7 +24,7 @@ integration_time_increase_rate = 0.000
 max_integration_time = 2.0
 
 noise_std = 0.05 # Noise augmentation, 0.05 is a good value to start on, for realism and high accuracy decrease it to not have as much noise during training, it can help with generalizing and reducing error accumulation during inference.
-ODE_method = "dopri5"
+ODE_method = "euler"
 resolution = 70 # The image resolution to train on
 hidden_size = 10  # Size of the hidden layers
 
