@@ -9,7 +9,7 @@ GENCA is a Neural Cellular Automata (NCA) model designed for video generation an
 - **Learns a Cellular Automata Rule:** GENCA learns a set of convolutional filters that act as a cellular automata rule, enabling it to generate new frames based on the spatial patterns in the previous frame.
 - **Generalizes and Predicts Future Frames:** GENCA goes beyond simply approximating the training video. It learns the underlying rules of the system, allowing it to generalize to unseen initial states and predict future frames beyond the training data.
 - **Transfer Learning:** You can transfer learn across resolutions and datasets, allowing you to leverage knowledge learned to upscale and train on a new dataset.
-- **Interactive Influence:** The color drawing feature in the Pygame visualization allows you to directly influence the NCA's behavior. The model learns to respond to different color patterns, enabling you to create interesting effects and potentially guide the generation process. For example, drawing orange on a black background in a model trained on a video of fire might lead to the emergence of patterns looking like fire.
+- **Interactive Influence:** The color drawing feature in the Pygame visualization allows you to directly influence what the NCA generates. The model learns to respond to different color patterns. For example, in a model trained on a video of a flowing river, drawing blue might cause the NCA to generate more water in that spot, while drawing green might encourage the growth of vegetation. 
 
 ## Requirements
 
