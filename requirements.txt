@@ -1,0 +1,6 @@
+numpy==1.26.4
+torch==2.4.1+cu124
+pygame==2.6.0
+Pillow==10.4.0
+torchdiffeq==0.2.4
+opencv-python-headless==4.10.0.84
