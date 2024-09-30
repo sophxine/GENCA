@@ -32,7 +32,7 @@ state_size = 1  # Not sure if increasing this improves performance
 
 
 # Learning rate with the ReduceLROnPlateau scheduler
-lr = 1e-4 # Initial learning rate
+lr = 1e-3 # Initial learning rate
 min_lr=1e-6
 lr_decrease_rate=1e-6
 patience=10 # How many epochs of no improvement in the validation loss before decreasing the learning rate
