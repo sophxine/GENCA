@@ -16,7 +16,7 @@ import cv2
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Hyperparameters
-#(I recommend setting the number of mini-batches and mini-batch to low at the beginning, especially if training from scratch, but not make sure to not set it too low.)
+#(I recommend setting the mini-batch size to low at the beginning, especially if training from scratch.)
 batch_size = 6  # Mini-batch size
 num_batches = 12 # Number of mini batches
 integration_time = 0.0001  # Initial time horizon for ODE integration
