@@ -16,7 +16,7 @@ GENCA is a Neural Cellular Automata (NCA) model designed for video generation an
 - CUDA-enabled GPU and CUDA toolkit installed.
 - PyTorch
 - Pygame
-- Other necessary Python libraries (see import statements in the code).
+- Other necessary Python libraries (use pip install -r requirements.txt).
 
 ## Dataset Format
 
