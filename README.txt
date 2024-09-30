@@ -1,35 +1,48 @@
-GENCA is a Neural Cellular Automata for generating videos and predicting future frames.
+# GENCA: Generative Neural Cellular Automata for Video
 
-It supports CUDA so make sure you have CUDA installed to efficiently train it.
+## Introduction
 
-The dataset format should be images in the folder defined in image_folder.
-You can use convert.py to convert videos and gifs to image sequences and after cleaning it if you want to, move the images to the training folder. The data contains an example with Lenia.
-In visualization it loads the first image of the dataset.
-To run a saved model without loading the dataset(excluding the first for initialization) or training, set the parameters to this:
-train = False
-visualize = True
+GENCA is a Neural Cellular Automata (NCA) model designed for video generation and future frame prediction. It leverages the power of CUDA for efficient training and utilizes a novel architecture combining convolutional layers, state representation, and ODE integration. 
 
+**Key Features:**
 
-Model architecture:
+- **Learns a Cellular Automata Rule:** GENCA learns a set of convolutional filters that act as a cellular automata rule, enabling it to generate new frames based on the spatial patterns in the previous frame.
+- **Generalizes and Predicts Future Frames:** GENCA goes beyond simply approximating the training video. It learns the underlying rules of the system, allowing it to generalize to unseen initial states and predict future frames beyond the training data.
+- **Transfer Learning:** You can transfer learn across resolutions and datasets, allowing you to leverage knowledge learned to upscale and train on a new dataset.
+- **Interactive Influence:** The color drawing feature in the Pygame visualization allows you to directly influence the NCA's behavior. The model learns to respond to different color patterns, enabling you to create interesting effects and potentially guide the generation process. For example, drawing orange on a black background in a model trained on a video of fire might lead to the emergence of patterns looking like fire.
 
-It's a Neural Cellular Automata using 2D convolutional layers with state representation and ODE(ordinary differential equations) integration.
+## Requirements
 
+- CUDA-enabled GPU and CUDA toolkit installed.
+- PyTorch
+- Pygame
+- Other necessary Python libraries (see import statements in the code).
 
-Summary of how it works:
+## Dataset Format
 
-It takes in a sequence of images, and outputs next frame from previous frame.
-In the training loop it takes a frame of the dataset and predicts the next frame, for all frames of the dataset
-It learns convolution filters that when applied iteratively, just like a cellular automata rule, to the initial frame in the real sequence, result in an approximation of the sequence and it's future frames.
-It also has state for potentially better memory but I have not tested that.
+- The dataset should consist of a sequence of images stored in a folder specified by the `image_folder` variable in the code.
+- You can use the provided `convert.py` script to convert videos and GIFs into image sequences or use your own image sequences, ordered alphanumerically. 
+- Clean and organize the images as needed and move them to the training folder. 
+- The "data" folder contains an example dataset with Lenia.
 
-You can transfer learn across resolutions and datasets.
+## Running a Saved Model
 
+To run a saved model without loading the dataset (except the first frame for initialization) or training, set the following parameters:
 
-Keys available in the pygame visualization:
+`train = False`
+`visualize = True`
 
-S: Save model
-I: initialize with the first frame of the dataset
-Tab: Randomize grid
-Space: Pause
-Left mouse button: Changes cell's color(the default color is white).
-Right mouse button: Change draw color based on color of the cell the mouse is currently hovering.
+**Note:** In the pygame visualization, it loads and initializes with the first image of the dataset.
+
+## Pygame Controls
+
+- **S:** Save model
+- **I:** Initialize with the first frame of the dataset
+- **Tab:** Randomize grid
+- **Space:** Pause
+- **Left mouse button:** Changes cell's color (the default color is white).
+- **Right mouse button:** Change draw color based on the color of the cell the mouse is currently hovering.
+
+## How It Works (Simplified)
+
+GENCA takes a sequence of images as input and learns to predict the next frame in the sequence based on the previous frame. It does this by learning a set of convolutional filters that act as a cellular automata rule. When these filters are applied repeatedly to an initial frame, they generate a sequence of frames that not only approximate the original video but also capture the underlying dynamics of the system, allowing for generalization and future frame prediction. The model also incorporates a state representation, which can potentially improve its ability to remember past information and generate more coherent video sequences.
