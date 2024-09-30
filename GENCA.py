@@ -15,37 +15,39 @@ from io import BytesIO
 import cv2
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-
 # Hyperparameters
 #(I recommend setting the number of mini-batches and mini-batch to low at the beginning, especially if training from scratch, but not make sure to not set it too low.)
-batch_size =6  # Mini-batch size
-num_batches=12 # Number of mini batches
+batch_size = 6  # Mini-batch size
+num_batches = 12 # Number of mini batches
 integration_time = 0.0001  # Initial time horizon for ODE integration
-integration_time_increase_rate=0.000
-max_integration_time=2.0
+integration_time_increase_rate = 0.000
+max_integration_time = 2.0
 
-noise_std=0.05 # Noise augmentation, 0.05 is a good value to start on, for realism and high accuracy decrease it to not have as much noise during training, it can help with generalizing and reducing error accumulation during inference.
-ODE_method="dopri5"
-resolution=50 # The image resolution to train on
+noise_std = 0.05 # Noise augmentation, 0.05 is a good value to start on, for realism and high accuracy decrease it to not have as much noise during training, it can help with generalizing and reducing error accumulation during inference.
+ODE_method = "dopri5"
+resolution = 70 # The image resolution to train on
+hidden_size = 10  # Size of the hidden layers
+
+
+
 
 state_size = 1  # Not sure if increasing this improves performance
 
-
 # Learning rate with the ReduceLROnPlateau scheduler
 lr = 1e-3 # Initial learning rate
-min_lr=1e-6
-lr_decrease_rate=1e-6
-patience=10 # How many epochs of no improvement in the validation loss before decreasing the learning rate
+min_lr = 1e-6
+lr_decrease_rate = 1e-6
+patience = 10 # How many epochs of no improvement in the validation loss before decreasing the learning rate
 
 
 # Settings
 image_folder = "data"  # Folder containing the image dataset
 current_model_name = "lenia"  # Name for saving the current model
-loaded_model_name = "lenia"  # Name of the model to load (if available)
+loaded_model_name = "lenica"  # Name of the model to load (if available)
 val_ratio = 0.10  # Percent of the last frames to use for validation
 
 trainingphases = 9999999999999999  # Number of training epochs
-save_interval=9999999999999999 # Save every x epoch, if you want to train without visualizing you can save regularly here.
+save_interval = 9999999999999999 # Save every x epoch, if you want to train without visualizing you can save regularly here.
 
 train = True  
 visualize = True
@@ -67,9 +69,6 @@ WIDTH = RESOLUTION_WIDTH * cell_size
 HEIGHT = RESOLUTION_HEIGHT * cell_size
 GRID_WIDTH = RESOLUTION_WIDTH
 GRID_HEIGHT = RESOLUTION_HEIGHT
-
-
-
 
 
 # Function to draw on the grid with selected color
@@ -305,11 +304,12 @@ def load_and_process_image(filepath):
 
 
 class CellularAutomataModel(nn.Module):
-    def __init__(self, state_size, grid_width, grid_height):
+    def __init__(self, state_size, grid_width, grid_height, hidden_size):
         super(CellularAutomataModel, self).__init__()
         self.state_size = state_size * 3
         self.grid_width = grid_width
         self.grid_height = grid_height
+        self.hidden_size = hidden_size
 
         def make_conv_layer(in_channels, out_channels, kernel_size, padding, dilation=1):
             return nn.Sequential(
@@ -333,29 +333,29 @@ class CellularAutomataModel(nn.Module):
         )
 
         self.state_update_short = nn.Sequential(
-            nn.Linear(3 * grid_width * grid_height, 256).cuda(),
+            nn.Linear(3 * grid_width * grid_height, hidden_size).cuda(),
             nn.ReLU().cuda(),
-            nn.Linear(256, state_size).cuda(),
+            nn.Linear(hidden_size, state_size).cuda(),
             nn.Tanh().cuda()
         )
         self.state_update_medium = nn.Sequential(
-            nn.Linear(3 * grid_width * grid_height, 256).cuda(),
+            nn.Linear(3 * grid_width * grid_height, hidden_size).cuda(),
             nn.ReLU().cuda(),
-            nn.Linear(256, state_size).cuda(),
+            nn.Linear(hidden_size, state_size).cuda(),
             nn.Tanh().cuda()
         )
         self.state_update_long = nn.Sequential(
-            nn.Linear(3 * grid_width * grid_height, 256).cuda(),
+            nn.Linear(3 * grid_width * grid_height, hidden_size).cuda(),
             nn.ReLU().cuda(),
-            nn.Linear(256, state_size).cuda(),
+            nn.Linear(hidden_size, state_size).cuda(),
             nn.Tanh().cuda()
         )
 
 
         self.ode_net = nn.Sequential(
-            nn.Linear(self.state_size, 256).cuda(),
+            nn.Linear(self.state_size, hidden_size).cuda(),
             nn.ReLU().cuda(),
-            nn.Linear(256, self.state_size).cuda()
+            nn.Linear(hidden_size, self.state_size).cuda()
         )
         self.ode_func = lambda t, y: self.ode_net(y)
 
@@ -430,7 +430,7 @@ val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)  # No
 grid_width, grid_height = initial_states[0].shape[0], initial_states[0].shape[1]
 
 # Initialize the model
-model = CellularAutomataModel(state_size, grid_width, grid_height).to(device)
+model = CellularAutomataModel(state_size, grid_width, grid_height, hidden_size).to(device)
 
 model = load_pretrained_model(model, f"{loaded_model_name}.pt")
 
@@ -449,6 +449,10 @@ if visualize:
     clock = pygame.time.Clock()
     # Initialize the grid with the first state from the dataset
     grid = initial_states[0].copy()
+        
+    # Create a drawing buffer
+    drawing_buffer = np.zeros_like(grid) 
+
     simulation_loop(model, state_size * 3)
 elif not train and not visualize:
     print("Neither training nor visualization is enabled.  Exiting.")
