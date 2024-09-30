@@ -43,7 +43,7 @@ patience = 10 # How many epochs of no improvement in the validation loss before 
 # Settings
 image_folder = "data"  # Folder containing the image dataset
 current_model_name = "lenia"  # Name for saving the current model
-loaded_model_name = "lenica"  # Name of the model to load (if available)
+loaded_model_name = "lenia"  # Name of the model to load (if available)
 val_ratio = 0.10  # Percent of the last frames to use for validation
 
 trainingphases = 9999999999999999  # Number of training epochs
