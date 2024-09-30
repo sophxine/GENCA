@@ -28,10 +28,11 @@ noise_std=0.05 # Noise augmentation, 0.05 is a good value to start on, for reali
 ODE_method="dopri5"
 resolution=50 # The image resolution to train on
 
+state_size = 1  # Not sure if increasing this improves performance
 
 
-# Learning rate with ReduceLROnPlateau scheduler
-lr = 1e-4
+# Learning rate with the ReduceLROnPlateau scheduler
+lr = 1e-4 # Initial learning rate
 min_lr=1e-6
 lr_decrease_rate=1e-6
 patience=10 # How many epochs of no improvement in the validation loss before decreasing the learning rate
@@ -43,8 +44,7 @@ current_model_name = "lenia"  # Name for saving the current model
 loaded_model_name = "lenia"  # Name of the model to load (if available)
 val_ratio = 0.10  # Percent of the last frames to use for validation
 
-trainingphases = 111111  # Number of training epochs
-shuffle_first_epoch = False  # Whether to shuffle data in the first epoch
+trainingphases = 9999999999999999  # Number of training epochs
 save_interval=9999999999999999 # Save every x epoch, if you want to train without visualizing you can save regularly here.
 
 train = True  
@@ -67,7 +67,6 @@ WIDTH = RESOLUTION_WIDTH * cell_size
 HEIGHT = RESOLUTION_HEIGHT * cell_size
 GRID_WIDTH = RESOLUTION_WIDTH
 GRID_HEIGHT = RESOLUTION_HEIGHT
-state_size = 1  # Doesn't do anything in this model I think
 
 
 
@@ -81,7 +80,7 @@ def draw_on_grid(mouse_pos, color):  # Provide a default color
     if 0 <= x < GRID_WIDTH and 0 <= y < GRID_HEIGHT:
         grid[y, x] = color
 
-# # Simulation loop (commented out)
+# Simulation loop 
 def simulation_loop(model,state_size):
     running = True
     clear_grid = False
@@ -102,20 +101,21 @@ def simulation_loop(model,state_size):
                     draw_on_grid(pygame.mouse.get_pos(), selected_color)
                     drawing_paused = True
                     simulation_paused = True
+                    
                 elif event.button == 3:  # Right mouse button
                     x, y = pygame.mouse.get_pos()
                     x //= cell_size
                     y //= cell_size
                     if 0 <= x < GRID_WIDTH and 0 <= y < GRID_HEIGHT:
                         selected_color = grid[y, x]  # Select color from clicked cell
+                        
             if event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 1:
                     drawing = False
                     drawing_paused = False
                     if not manual_pause:
                         simulation_paused = False
-
-
+                        
             if event.type == pygame.MOUSEMOTION and drawing:
                 draw_on_grid(pygame.mouse.get_pos(), selected_color)
 
@@ -442,7 +442,7 @@ if train:
     training_thread.start()
 
 if visualize:
-        # Create the pygame window
+    # Create the pygame window
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("GENCA")
 
