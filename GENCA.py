@@ -17,7 +17,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Hyperparameters
 noise_std = 0.05  
-
 state_size = 1 
 
 # Learning rate with the ReduceLROnPlateau scheduler
