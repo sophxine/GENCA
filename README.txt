@@ -2,7 +2,8 @@
 
 ## Introduction
 
-GENCA uses a Neural Cellular Automata (NCA) model for predicting next frames based on a sequence of images. It leverages the power of CUDA for efficient training and utilizes an architecture combining convolutional layers, state, and ODE integration. 
+GENCA uses a novel architecture; a Convolutional Neural Cellular Automata (NCA) model for predicting next frames based on a sequence of images. It leverages CUDA for efficient training and uses an architecture combining NCA and convolutional layers, state, and ODE integration. It is a convolutional NCA.
+
 
 **Key Features:**
 
