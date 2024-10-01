@@ -35,11 +35,11 @@ max_channels=150
 
 
 # Training settings
-image_folder = "lenia3"  # Folder containing the image dataset
+image_folder = "data"  # Folder containing the image dataset
 current_model_name = "lenia"  # Name for saving the current model
 loaded_model_name = "lenia"  # Name of the model to load (if available)
 resolution = 50 # The image resolution to train on
-batch_size = 5  # Mini-batch size #(I recommend setting it to a low value at the beginning, especially if training from scratch.)
+batch_size = 6  # Mini-batch size #(I recommend setting it to a low value at the beginning, especially if training from scratch.)
 num_batches = 12 # Number of mini batches
 
 train = True  
