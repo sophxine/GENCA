@@ -8,7 +8,7 @@ GENCA uses a novel architecture; a Convolutional Neural Cellular Automata model 
 **Key Features:**
 
 - **Learns a Cellular Automata Rule:** GENCA learns a set of convolutional filters that act as a cellular automata rule, enabling it to generate new frames based on the spatial patterns in the previous frame.
-- **Generalizes and Predicts Future Frames:** GENCA generalizes well to complex systems, it can generalize to unseen initial states and predict future frames beyond the training data.
+- **Generalizes and Predicts Future Frames:** GENCA generalizes well to complex systems, it can generalize to unseen initial states, predict future frames beyond the training data and is robust to noise.
 - **Transfer Learning:** You can transfer learn across resolutions and datasets, allowing you to leverage knowledge learned to upscale and train on a new dataset.
 - **Interactive Influence:** The color drawing feature in the Pygame visualization allows you to directly influence what the NCA generates, determined by which color(state) you draw with. 
 
