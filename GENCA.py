@@ -16,20 +16,7 @@ import cv2
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Hyperparameters
-#(I recommend setting the mini-batch size to low at the beginning, especially if training from scratch.)
-batch_size = 6  # Mini-batch size
-num_batches = 12 # Number of mini batches
-integration_time = 0.0001  # Initial time horizon for ODE integration
-integration_time_increase_rate = 0.000
-max_integration_time = 2.0
-
 noise_std = 0.05 # Noise augmentation, 0.05 is a good value to start on, for realism and high accuracy decrease it to not have as much noise during training, it can help with generalizing and reducing error accumulation during inference.
-ODE_method = "euler"
-resolution = 70 # The image resolution to train on
-hidden_size = 10  # Size of the hidden layers
-
-
-
 
 state_size = 1  # Not sure if increasing this improves performance
 
@@ -37,24 +24,53 @@ state_size = 1  # Not sure if increasing this improves performance
 lr = 1e-3 # Initial learning rate
 min_lr = 1e-6
 lr_decrease_rate = 1e-6
-patience = 10 # How many epochs of no improvement in the validation loss before decreasing the learning rate
+patience = 20 # How many epochs of no improvement in the validation loss before decreasing the learning rate by lr_decrease_rate.
 
 
-# Settings
-image_folder = "data"  # Folder containing the image dataset
+
+
+# Model parameters
+hidden_size = 10  # Size of the hidden layers
+num_layers=5 # Number of convolutional layers
+min_channels=20
+max_channels=150
+
+
+
+# Training settings
+image_folder = "lenia3"  # Folder containing the image dataset
 current_model_name = "lenia"  # Name for saving the current model
 loaded_model_name = "lenia"  # Name of the model to load (if available)
-val_ratio = 0.10  # Percent of the last frames to use for validation
-
-trainingphases = 9999999999999999  # Number of training epochs
-save_interval = 9999999999999999 # Save every x epoch, if you want to train without visualizing you can save regularly here.
+resolution = 50 # The image resolution to train on
+#(I recommend setting the mini-batch size to low at the beginning, especially if training from scratch.)
+batch_size = 2  # Mini-batch size
+num_batches = 12 # Number of mini batches
 
 train = True  
 visualize = True
+print_interval=1 # Print every x epoch
+print_lr=False # Print learning rate
+
+
+val_ratio = 0.10  # Percent of the last frames to use for validation
+training_phases = 9999999999999999  # Number of training epochs
+save_interval = 9999999999999999 # Save every x epoch, if you want to train without visualizing you can save regularly here.
+
+
+
+# ODE settings
+integration_time = 0.0001  # Initial time horizon for ODE integration
+integration_time_increase_rate = 0.000
+max_integration_time = 2.0
+ODE_method = "dopri5"
+
+
 
 # Pygame setting
-cell_size = 5
+cell_size = 2
 FPS = 260 
+
+
 
 # CUDA settings
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -71,8 +87,8 @@ GRID_WIDTH = RESOLUTION_WIDTH
 GRID_HEIGHT = RESOLUTION_HEIGHT
 
 
-# Function to draw on the grid with selected color
-def draw_on_grid(mouse_pos, color):  # Provide a default color
+# Function to draw on the grid
+def draw_on_grid(mouse_pos, color):
     x, y = mouse_pos
     x //= cell_size
     y //= cell_size
@@ -88,7 +104,7 @@ def simulation_loop(model,state_size):
     simulation_paused = False
     manual_pause = False
     state = torch.zeros((1, state_size), dtype=torch.float32).to(device) # Initialize state
-    selected_color = (1.0, 1.0, 1.0)  # Initialize selected color to white *outside* the loop    
+    selected_color = (1.0, 1.0, 1.0)  # Initialize selected color to white   
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -123,8 +139,11 @@ def simulation_loop(model,state_size):
                     simulation_paused = not simulation_paused
                     manual_pause = simulation_paused  # Update manual pause state
 
+
+            if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_c:
-                    grid.fill((0.0, 0.0, 0.0))  # Fill with black
+                    grid[:] = 0.0  # Set all elements to 0.0 (black)
+                    selected_color = (1.0, 1.0, 1.0)  # Reset selected color to white 
                     clear_grid = True
 
                 if event.key == pygame.K_TAB:
@@ -139,7 +158,7 @@ def simulation_loop(model,state_size):
                     grid[:] = initial_states[0].copy()
 
         if clear_grid:
-            screen.fill((255, 255, 255))  # White background
+            screen.fill((255, 255, 255)) 
             clear_grid = False
         else:
 
@@ -150,7 +169,7 @@ def simulation_loop(model,state_size):
                 grid[:] = predicted_state
 
 
-            screen.fill((255, 255, 255))  # White background
+            screen.fill((255, 255, 255)) 
             for y in range(GRID_HEIGHT):
                 for x in range(GRID_WIDTH):
                     cell_color = (int(grid[y, x, 0] * 255), int(grid[y, x, 1] * 255), int(grid[y, x, 2] * 255))
@@ -163,6 +182,7 @@ def simulation_loop(model,state_size):
 
 
 
+      
 def train_model(model, train_loader, val_loader, epochs, state_size, 
                 integration_time=integration_time,
                 noise_std=noise_std):
@@ -171,10 +191,11 @@ def train_model(model, train_loader, val_loader, epochs, state_size,
     optimizer = optim.Adam(model.parameters(), lr=lr)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=lr_decrease_rate, patience=patience, min_lr=min_lr) 
     criterion = nn.MSELoss()
-
-
+    
+    # Calculate the number of learnable parameters
+    total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f"Number of learnable parameters: {total_params}")
     # Training loop
-
     for epoch in range(epochs):
         epoch_loss = 0.0
         val_loss = 0.0
@@ -211,7 +232,7 @@ def train_model(model, train_loader, val_loader, epochs, state_size,
             optimizer.zero_grad()
 
             state = odeint(model.ode_func, state,
-                           torch.tensor([0.0, integration_time]).to(device), # Ensure time tensor is on the correct device
+                           torch.tensor([0.0, integration_time]).to(device),
                            method=ODE_method).to(device)[-1]
 
             state_short_expanded = state[:, :state_size].view(-1, state_size, 1, 1).expand(-1, state_size, batch_x_noisy.shape[2], batch_x_noisy.shape[3])
@@ -239,7 +260,6 @@ def train_model(model, train_loader, val_loader, epochs, state_size,
             optimizer.step()
 
             epoch_loss += loss.item() * len(batch_x_noisy)
-
         # Validation loop 
         model.eval() 
         with torch.no_grad():
@@ -268,10 +288,11 @@ def train_model(model, train_loader, val_loader, epochs, state_size,
 
         epoch_loss /= len(train_loader.dataset) 
         val_loss /= len(val_loader.dataset)
-
-        print(f"Epoch {epoch + 1}/{epochs} completed. Training Loss: {epoch_loss:.10f}, Validation Loss: {val_loss:.10f}") 
+        if epoch%print_interval==0 and epoch!=0:
+            print(f"Epoch {epoch + 1}/{epochs} completed. Training Loss: {epoch_loss:.10f}, Validation Loss: {val_loss:.10f}") 
         scheduler.step(val_loss)
-        
+        if print_lr==True and epoch%print_interval==0 and epoch!=0:
+            print(f"Current Learning Rate: {optimizer.param_groups[0]['lr']:.8f}")         
 # Load images from the folder and create the dataset
 def load_images_from_folder(folder, max_workers=None):
     image_files = sorted([f for f in os.listdir(folder) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.tif', '.tiff'))])
@@ -303,34 +324,47 @@ def load_and_process_image(filepath):
     return img_array
 
 
+
+
+
+
 class CellularAutomataModel(nn.Module):
-    def __init__(self, state_size, grid_width, grid_height, hidden_size):
+    def __init__(self, state_size, grid_width, grid_height, hidden_size, num_layers=num_layers, min_channels=min_channels, max_channels=max_channels): 
         super(CellularAutomataModel, self).__init__()
         self.state_size = state_size * 3
         self.grid_width = grid_width
         self.grid_height = grid_height
         self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.min_channels = min_channels
+        self.max_channels = max_channels  # Store max_channels
 
         def make_conv_layer(in_channels, out_channels, kernel_size, padding, dilation=1):
             return nn.Sequential(
-                nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, padding=padding, dilation=dilation).cuda(),
-                nn.LayerNorm([out_channels, self.grid_height, self.grid_width]).cuda(),  # Dynamic LayerNorm
-                nn.LeakyReLU().cuda()
+                nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, padding=padding, dilation=dilation).to(device),
+                nn.LayerNorm([out_channels, self.grid_height, self.grid_width]).to(device),  # Dynamic LayerNorm
+                nn.LeakyReLU().to(device)
             )
 
-        self.conv_layers = nn.Sequential(
-            make_conv_layer(3 + self.state_size, 128, 5, 2),
-            make_conv_layer(128, 256, 3, 1),
-            make_conv_layer(256, 256, 3, 2, dilation=2),
-            make_conv_layer(256, 128, 3, 1),
-            make_conv_layer(128, 128, 3, 4, dilation=4),
-            make_conv_layer(128, 64, 3, 1),
-            make_conv_layer(64, 64, 3, 2, dilation=2),
-            make_conv_layer(64, 32, 3, 1),
-            make_conv_layer(32, 32, 3, 4, dilation=4),
-            nn.Conv2d(32, 3, kernel_size=1).cuda(),
-            nn.Sigmoid().cuda()
-        )
+
+
+        conv_layers = []
+        in_channels = 3 + self.state_size
+        for i in range(self.num_layers):
+            if i == 0:
+                conv_layers.append(make_conv_layer(in_channels, self.min_channels, 5, 2))  # Use min_channels for the first layer
+                in_channels = self.min_channels 
+            elif i % 2 == 0:
+                out_channels = min(in_channels * 2, self.max_channels)
+                conv_layers.append(make_conv_layer(in_channels, out_channels, 3, 2, dilation=2))
+                in_channels = out_channels
+            else:
+                conv_layers.append(make_conv_layer(in_channels, in_channels, 3, 1))  
+
+        conv_layers.append(nn.Conv2d(in_channels, 3, kernel_size=1).to(device))
+        conv_layers.append(nn.Sigmoid().to(device))
+        self.conv_layers = nn.Sequential(*conv_layers)
+
 
         self.state_update_short = nn.Sequential(
             nn.Linear(3 * grid_width * grid_height, hidden_size).cuda(),
@@ -351,7 +385,6 @@ class CellularAutomataModel(nn.Module):
             nn.Tanh().cuda()
         )
 
-
         self.ode_net = nn.Sequential(
             nn.Linear(self.state_size, hidden_size).cuda(),
             nn.ReLU().cuda(),
@@ -359,12 +392,11 @@ class CellularAutomataModel(nn.Module):
         )
         self.ode_func = lambda t, y: self.ode_net(y)
 
-
     def forward(self, x, state, integration_time):
         # Move time tensor to the same device as the state
-        t = torch.tensor([0.0, integration_time]).to(state.device)  # crucial change
+        t = torch.tensor([0.0, integration_time]).to(state.device)
 
-        state = odeint(self.ode_func, state, t, method=ODE_method)[-1]
+        state = odeint(self.ode_func, state, t, method="dopri5")[-1]
 
         state_short_expanded = state[:, :self.state_size // 3].view(-1, self.state_size // 3, 1, 1).expand(-1, self.state_size // 3, x.shape[2], x.shape[3])
         state_medium_expanded = state[:, self.state_size // 3:2 * self.state_size // 3].view(-1, self.state_size // 3, 1, 1).expand(-1, self.state_size // 3, x.shape[2], x.shape[3])
@@ -372,7 +404,8 @@ class CellularAutomataModel(nn.Module):
         x = torch.cat((x, state_short_expanded, state_medium_expanded, state_long_expanded), dim=1)
 
         return self.conv_layers(x)
-    
+
+        
 def load_pretrained_model(model, path):
     try:
         pretrained_dict = torch.load(path)
@@ -424,7 +457,7 @@ train_dataset = torch.utils.data.Subset(dataset, range(train_size))
 val_dataset = torch.utils.data.Subset(dataset, range(train_size, len(dataset)))
 
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)  # No need to shuffle validation set
+val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)  
 
 # Get grid dimensions from the first item in the dataset
 grid_width, grid_height = initial_states[0].shape[0], initial_states[0].shape[1]
@@ -437,7 +470,7 @@ model = load_pretrained_model(model, f"{loaded_model_name}.pt")
 if train:
     training_thread = threading.Thread(
         target=train_model,
-        args=(model, train_loader, val_loader, trainingphases, state_size)
+        args=(model, train_loader, val_loader, training_phases, state_size)
     )
     training_thread.start()
 
