@@ -63,7 +63,7 @@ ODE_method = "dopri5"
 
 # Pygame setting
 cell_size = 2
-draw_radius=5
+draw_radius=2
 FPS = 60 # Lower it to train faster while visualizing
 
 # CUDA settings
