@@ -16,41 +16,48 @@ import cv2
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Hyperparameters
-noise_std = 0.05  
-state_size = 1 
+noise_std = 0.05 # Noise augmentation, 0.05 is a good value to start on, for realism and high accuracy decrease it to not have as much noise during training, it can help with generalizing and reducing error accumulation during inference.
+state_size = 1 # Not sure if increasing this improves performance
 
 # Learning rate with the ReduceLROnPlateau scheduler
-lr = 1e-3 
+lr = 1e-3 # Initial learning rate
 min_lr = 1e-6
 lr_decrease_rate = 1e-6
-patience = 20 
+patience = 20 # How many epochs of no improvement in the validation loss before decreasing the learning rate by lr_decrease_rate.
+
 
 # Model parameters
-hidden_size = 10  
-num_layers = 5  
-min_channels = 20
-max_channels = 150
+hidden_size = 10  # Size of the hidden layers
+num_layers=5 # Number of convolutional layers
+min_channels=20
+max_channels=150
+
+
 
 # Training settings
-image_folder = "lenia3" 
-current_model_name = "lenia"
-loaded_model_name = "lenia"  
-resolution = 50  
-batch_size = 2  
-num_batches = 12 
+image_folder = "data"  # Folder containing the image dataset
+current_model_name = "lenia"  # Name for saving the current model
+loaded_model_name = "lenia"  # Name of the model to load (if available)
+resolution = 50 # The image resolution to train on
+#(I recommend setting the mini-batch size to low at the beginning, especially if training from scratch.)
+batch_size = 2  # Mini-batch size
+num_batches = 12 # Number of mini batches
+
 
 train = True  
 visualize = True
-print_interval = 1 
-print_lr = False
+print_interval=1 # Print every x epoch
+print_lr=False # Print learning rate
 
-val_ratio = 0.10  
-training_phases = 9999999999999999  
-save_interval = 9999999999999999 
+val_ratio = 0.10  # Percent of the last frames to use for validation
+training_phases = 9999999999999999  # Number of training epochs
+save_interval = 9999999999999999 # Save every x epoch, if you want to train without visualizing you can save regularly here.
+
+ 
 
 # ODE settings
 use_ode = True 
-integration_time = 0.0001  
+integration_time = 0.0001  # Initial time horizon for ODE integration
 integration_time_increase_rate = 0.001
 max_integration_time = 2.0
 ODE_method = "dopri5"
@@ -63,6 +70,8 @@ FPS = 260
 # CUDA settings
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}") 
+
+
 
 # Initialize pygame
 pygame.init()
