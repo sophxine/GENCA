@@ -20,9 +20,9 @@ noise_std = 0.05 # Noise augmentation, 0.05 is a good value to start on, for rea
 state_size = 1 # Not sure if increasing this improves performance
 
 # Learning rate with the ReduceLROnPlateau scheduler
-lr = 1e-3 # Initial learning rate
-min_lr = 1e-6
-lr_decrease_rate = 1e-6
+lr = 0.001 # Initial learning rate
+min_lr = 0.00001
+lr_decrease_rate = 0.0001
 patience = 20 # How many epochs of no improvement in the validation loss before decreasing the learning rate by lr_decrease_rate.
 
 
@@ -58,7 +58,7 @@ save_interval = 9999999999999999 # Save every x epoch, if you want to train with
 # ODE settings
 use_ode = True 
 integration_time = 0.0001  # Initial time horizon for ODE integration
-integration_time_increase_rate = 0.001
+integration_time_increase_rate = 0.000
 max_integration_time = 2.0
 ODE_method = "dopri5"
 
