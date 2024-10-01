@@ -1,5 +1,5 @@
 # GENCA: Generative Neural Cellular Automata for Video
-![](https://github.com/sophxine/GENCA/Lenia.gif)
+![](https://github.com/sophxine/GENCA/blob/main/Lenia.gif)
 ## Introduction
 
 GENCA uses a novel architecture; a Convolutional Neural Cellular Automata model for predicting next frames based on a sequence of images. It leverages CUDA for efficient training and uses an architecture combining NCA and convolutional layers and optional ODE integration.
