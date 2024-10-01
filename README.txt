@@ -2,23 +2,22 @@
 
 ## Introduction
 
-GENCA uses a novel architecture; a Convolutional Neural Cellular Automata (NCA) model for predicting next frames based on a sequence of images. It leverages CUDA for efficient training and uses an architecture combining NCA and convolutional layers, state, and ODE integration. It is a convolutional NCA.
+GENCA uses a novel architecture; a Convolutional Neural Cellular Automata model for predicting next frames based on a sequence of images. It leverages CUDA for efficient training and uses an architecture combining NCA and convolutional layers and optional ODE integration.
 
 
 **Key Features:**
 
 - **Learns a Cellular Automata Rule:** GENCA learns a set of convolutional filters that act as a cellular automata rule, enabling it to generate new frames based on the spatial patterns in the previous frame.
-- **Generalizes and Predicts Future Frames:** GENCA learns the underlying rules of the system, allowing it to generalize to unseen initial states and predict future frames beyond the training data.
+- **Generalizes and Predicts Future Frames:** GENCA generalizes well to complex systems, it can generalize to unseen initial states and predict future frames beyond the training data.
 - **Transfer Learning:** You can transfer learn across resolutions and datasets, allowing you to leverage knowledge learned to upscale and train on a new dataset.
-- **Interactive Influence:** The color drawing feature in the Pygame visualization allows you to directly influence what the NCA generates. The model learns to respond to different color patterns. For example, in a model trained on a video of a flowing river, drawing blue might cause the NCA to generate more water in that spot, while drawing green might encourage the growth of vegetation. 
+- **Interactive Influence:** The color drawing feature in the Pygame visualization allows you to directly influence what the NCA generates, determined by which color(state) you draw with. 
 
 To install it, first install the dependecies in requirements.txt.
 
 ## Dataset Format
 
 - The dataset should consist of a sequence of images stored in a folder specified by the `image_folder` variable in the code.
-- You can use the provided `convert.py` script to convert videos and GIFs into image sequences or use your own image sequences, ordered alphanumerically. 
-- Clean and organize the images as needed and move them to the training folder. 
+- You can use `convert.py` to convert videos and GIFs into image sequences or use your own image sequences, ordered alphanumerically. Clean and organize the images as needed and move them to the training folder. 
 - The "data" folder contains an example dataset with Lenia.
 
 ## Running a Saved Model
