@@ -39,8 +39,7 @@ image_folder = "lenia3"  # Folder containing the image dataset
 current_model_name = "lenia"  # Name for saving the current model
 loaded_model_name = "lenia"  # Name of the model to load (if available)
 resolution = 50 # The image resolution to train on
-#(I recommend setting the mini-batch size to low at the beginning, especially if training from scratch.)
-batch_size = 2  # Mini-batch size
+batch_size = 5  # Mini-batch size #(I recommend setting it to a low value at the beginning, especially if training from scratch.)
 num_batches = 12 # Number of mini batches
 
 train = True  
