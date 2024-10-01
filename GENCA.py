@@ -35,14 +35,14 @@ max_channels=150
 
 
 # Training settings
-image_folder = "data"  # Folder containing the image dataset
+image_folder = "lenia3"  # Folder containing the image dataset
 current_model_name = "lenia"  # Name for saving the current model
 loaded_model_name = "lenia"  # Name of the model to load (if available)
 resolution = 50 # The image resolution to train on
 #(I recommend setting the mini-batch size to low at the beginning, especially if training from scratch.)
 batch_size = 2  # Mini-batch size
 num_batches = 12 # Number of mini batches
-
+draw_radius=5
 
 train = True  
 visualize = True
@@ -83,13 +83,20 @@ GRID_WIDTH = RESOLUTION_WIDTH
 GRID_HEIGHT = RESOLUTION_HEIGHT
 
 # Function to draw on the grid
-def draw_on_grid(mouse_pos, color):
+def draw_on_grid(mouse_pos, color_rgb, radius=draw_radius):
     x, y = mouse_pos
     x //= cell_size
     y //= cell_size
-    if 0 <= x < GRID_WIDTH and 0 <= y < GRID_HEIGHT:
-        grid[y, x] = color
 
+    for i in range(GRID_HEIGHT):
+        for j in range(GRID_WIDTH):
+            distance = math.sqrt((i - y)**2 + (j - x)**2)
+            if distance <= radius:
+                if 0 <= j < GRID_WIDTH and 0 <= i < GRID_HEIGHT:
+                    # Convert RGB to normalized floats
+                    color_float = (color_rgb[0] / 255.0, color_rgb[1] / 255.0, color_rgb[2] / 255.0)
+                    grid[i, j] = color_float  # Assign the normalized color
+                    
 # Simulation loop 
 def simulation_loop(model, state_size):
     running = True
@@ -99,7 +106,8 @@ def simulation_loop(model, state_size):
     simulation_paused = False
     manual_pause = False
     state = torch.zeros((1, state_size), dtype=torch.float32).to(device) 
-    selected_color = (1.0, 1.0, 1.0)   
+    selected_color = (1.0, 1.0, 1.0) # Initialize with white
+    selected_color_rgb = (255, 255, 255)  
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -112,13 +120,15 @@ def simulation_loop(model, state_size):
                     drawing_paused = True
                     simulation_paused = True
                     
+
                 elif event.button == 3:  # Right mouse button
                     x, y = pygame.mouse.get_pos()
                     x //= cell_size
                     y //= cell_size
                     if 0 <= x < GRID_WIDTH and 0 <= y < GRID_HEIGHT:
-                        selected_color = grid[y, x]  # Select color from clicked cell
-                        
+                        selected_color_rgb = (int(grid[y, x, 0] * 255), 
+                                                int(grid[y, x, 1] * 255), 
+                                                int(grid[y, x, 2] * 255)) # Store as RGB 
             if event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 1:
                     drawing = False
@@ -126,8 +136,10 @@ def simulation_loop(model, state_size):
                     if not manual_pause:
                         simulation_paused = False
                         
+
+
             if event.type == pygame.MOUSEMOTION and drawing:
-                draw_on_grid(pygame.mouse.get_pos(), selected_color)
+                draw_on_grid(pygame.mouse.get_pos(), selected_color_rgb)  # Use stored color
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
@@ -148,7 +160,7 @@ def simulation_loop(model, state_size):
                     torch.save(model.state_dict(), f"{current_model_name}.pt")  # Save model weights
                     print("Model weights saved.")
 
-                # Initialize grid with the first state from the dataset (can be adapted)
+                # Initialize grid with the first state from the dataset
                 if event.key == pygame.K_i:
                     grid[:] = initial_states[0].copy()
 
