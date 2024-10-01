@@ -42,7 +42,6 @@ resolution = 50 # The image resolution to train on
 #(I recommend setting the mini-batch size to low at the beginning, especially if training from scratch.)
 batch_size = 2  # Mini-batch size
 num_batches = 12 # Number of mini batches
-draw_radius=5
 
 train = True  
 visualize = True
@@ -65,7 +64,8 @@ ODE_method = "dopri5"
 
 # Pygame setting
 cell_size = 2
-FPS = 260 
+draw_radius=5
+FPS = 230 
 
 # CUDA settings
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
