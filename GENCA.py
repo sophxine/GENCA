@@ -55,7 +55,7 @@ save_interval = 9999999999999999 # Save every x epoch, if you want to train with
  
 
 # ODE settings
-use_ode = True 
+use_ode = False 
 integration_time = 0.0001  # Initial time horizon for ODE integration
 integration_time_increase_rate = 0.000
 max_integration_time = 2.0
@@ -65,7 +65,7 @@ ODE_method = "dopri5"
 # Pygame setting
 cell_size = 2
 draw_radius=5
-FPS = 230 
+FPS = 60 # Lower it to train faster while visualizing
 
 # CUDA settings
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
