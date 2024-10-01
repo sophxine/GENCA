@@ -97,7 +97,8 @@ def draw_on_grid(mouse_pos, color_rgb, radius=draw_radius):
                     grid[i, j] = color_float  # Assign the normalized color
                     
 # Simulation loop 
-def simulation_loop(model, state_size):
+
+def simulation_loop(model, state_size, dataset_length):
     running = True
     clear_grid = False
     drawing = False
@@ -107,6 +108,9 @@ def simulation_loop(model, state_size):
     state = torch.zeros((1, state_size), dtype=torch.float32).to(device) 
     selected_color = (1.0, 1.0, 1.0) # Initialize with white
     selected_color_rgb = (255, 255, 255)  
+    looping = False  
+    loop_counter = 0  
+
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -134,7 +138,6 @@ def simulation_loop(model, state_size):
                     drawing_paused = False
                     if not manual_pause:
                         simulation_paused = False
-                        
 
 
             if event.type == pygame.MOUSEMOTION and drawing:
@@ -163,18 +166,40 @@ def simulation_loop(model, state_size):
                 if event.key == pygame.K_i:
                     grid[:] = initial_states[0].copy()
 
+                # Toggle looping
+                if event.key == pygame.K_l:
+                    looping = not looping
+                    if looping:
+                        loop_counter = 0  # Reset counter when starting a loop
+                        grid[:] = initial_states[0].copy() # Reset to the initial state
+                        simulation_paused = False
+
         if clear_grid:
             screen.fill((255, 255, 255)) 
             clear_grid = False
         else:
 
-
-            if not drawing_paused and not simulation_paused:
+            # Looping Prediction
+            if looping and not drawing_paused:
                 grid_tensor = torch.tensor(grid, dtype=torch.float32).permute(2, 0, 1).unsqueeze(0).to(device)
                 if use_ode:
-                    predicted_state = model(grid_tensor, state, integration_time).squeeze(0).permute(1, 2, 0).cpu().detach().numpy()  # Pass integration_time
+                    predicted_state = model(grid_tensor, state, integration_time).squeeze(0).permute(1, 2, 0).cpu().detach().numpy()
                 else:
-                    predicted_state = model(grid_tensor, state).squeeze(0).permute(1, 2, 0).cpu().detach().numpy() 
+                    predicted_state = model(grid_tensor, state).squeeze(0).permute(1, 2, 0).cpu().detach().numpy()
+                grid[:] = predicted_state
+                loop_counter += 1
+                if loop_counter >= dataset_length:
+                    grid[:] = initial_states[0].copy() # Reset to the initial state
+                    loop_counter = 0
+
+
+            # Regular Prediction (when not looping)
+            elif not drawing_paused and not simulation_paused and not looping: 
+                grid_tensor = torch.tensor(grid, dtype=torch.float32).permute(2, 0, 1).unsqueeze(0).to(device)
+                if use_ode:
+                    predicted_state = model(grid_tensor, state, integration_time).squeeze(0).permute(1, 2, 0).cpu().detach().numpy()
+                else:
+                    predicted_state = model(grid_tensor, state).squeeze(0).permute(1, 2, 0).cpu().detach().numpy()
                 grid[:] = predicted_state
 
 
@@ -188,7 +213,6 @@ def simulation_loop(model, state_size):
         clock.tick(FPS)
 
     pygame.quit()
-
 def train_model(model, train_loader, val_loader, epochs, state_size):
     global integration_time # Make integration_time a global variable
     model.to(device)
@@ -467,7 +491,8 @@ if visualize:
     # Create a drawing buffer
     drawing_buffer = np.zeros_like(grid) 
 
-    simulation_loop(model, state_size)
+    dataset_length = len(initial_states)  # Get the dataset length for looping
+    simulation_loop(model, state_size, dataset_length) # Pass dataset length to simulation loop
 elif not train and not visualize:
     print("Neither training nor visualization is enabled.  Exiting.")
 elif train and visualize:
