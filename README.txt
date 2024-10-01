@@ -37,7 +37,7 @@ To run a saved model without loading the dataset (except the first frame for ini
 - **Space:** Pause visualization and training
 - **Left mouse button:** Changes cell's color (the default color is white).
 - **Right mouse button:** Change draw color based on the color of the cell the mouse is currently hovering.
-
+- **L:** Starts/stops looping prediction for the length of the dataset, initializing with the first frame of the dataset each time. 
 ## How It Works
 
 GENCA takes a sequence of images as input and learns to predict the next frame in the sequence based on the previous frame. It does this by learning a set of convolutional filters that act as a cellular automata rule. When these filters are applied repeatedly to an initial frame, they generate a sequence of frames that not only approximate the original video but also capture the underlying dynamics of the system, allowing for generalization and future frame prediction. The model also incorporates a state representation, which can potentially improve its ability to remember past information and generate more coherent video sequences.
