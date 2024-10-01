@@ -36,7 +36,7 @@ To run a saved model without loading the dataset (except the first frame for ini
 - **S:** Save model
 - **I:** Initialize with the first frame of the dataset
 - **Tab:** Randomize grid
-- **Space:** Pause visualization and training
+- **Space:** Pause visualization
 - **Left mouse button:** Changes cell's color (the default color is white).
 - **Right mouse button:** Change draw color based on the color of the cell the mouse is currently hovering.
 - **L:** Starts/stops looping prediction for the length of the dataset, initializing with the first frame of the dataset each time. 
