@@ -43,5 +43,5 @@ To run a saved model without loading the dataset (except the first frame for ini
 
 ## How It Works
 
-GENCA takes a sequence of images as input and learns to predict the next frame in the sequence based on the previous frame. It does this by learning a set of convolutional filters that act as a cellular automata rule. When these filters are applied repeatedly to an initial frame, they generate a sequence of frames that not only approximate the original video but also capture the underlying dynamics of the system, allowing for generalization and future frame prediction. The model also incorporates a state representation, which can potentially improve its ability to remember past information and generate more coherent video sequences.
+GENCA takes one image as input and learns to predict the next frame in the sequence based on the previous frame. It does this by learning a set of convolutional filters that act as a cellular automata rule. When these filters are applied repeatedly to an initial frame, they generate a sequence of frames that not only approximate the original video but also capture the underlying dynamics of the system, allowing for generalization and future frame prediction. The model also incorporates a state representation, which can potentially improve its ability to remember past information and generate more coherent video sequences.
 
