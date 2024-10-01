@@ -12,7 +12,7 @@ GENCA uses a novel architecture; a Convolutional Neural Cellular Automata (NCA) 
 - **Transfer Learning:** You can transfer learn across resolutions and datasets, allowing you to leverage knowledge learned to upscale and train on a new dataset.
 - **Interactive Influence:** The color drawing feature in the Pygame visualization allows you to directly influence what the NCA generates. The model learns to respond to different color patterns. For example, in a model trained on a video of a flowing river, drawing blue might cause the NCA to generate more water in that spot, while drawing green might encourage the growth of vegetation. 
 
-To install it, first install the dependecies in requirements.txt
+To install it, first install the dependecies in requirements.txt.
 
 ## Dataset Format
 
