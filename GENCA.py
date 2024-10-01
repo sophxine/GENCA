@@ -16,76 +16,63 @@ import cv2
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Hyperparameters
-noise_std = 0.05 # Noise augmentation, 0.05 is a good value to start on, for realism and high accuracy decrease it to not have as much noise during training, it can help with generalizing and reducing error accumulation during inference.
+noise_std = 0.05  
 
-state_size = 1  # Not sure if increasing this improves performance
+state_size = 1 
 
 # Learning rate with the ReduceLROnPlateau scheduler
-lr = 1e-3 # Initial learning rate
+lr = 1e-3 
 min_lr = 1e-6
 lr_decrease_rate = 1e-6
-patience = 20 # How many epochs of no improvement in the validation loss before decreasing the learning rate by lr_decrease_rate.
-
-
-
+patience = 20 
 
 # Model parameters
-hidden_size = 10  # Size of the hidden layers
-num_layers=5 # Number of convolutional layers
-min_channels=20
-max_channels=150
-
-
+hidden_size = 10  
+num_layers = 5  
+min_channels = 20
+max_channels = 150
 
 # Training settings
-image_folder = "lenia3"  # Folder containing the image dataset
-current_model_name = "lenia"  # Name for saving the current model
-loaded_model_name = "lenia"  # Name of the model to load (if available)
-resolution = 50 # The image resolution to train on
-#(I recommend setting the mini-batch size to low at the beginning, especially if training from scratch.)
-batch_size = 2  # Mini-batch size
-num_batches = 12 # Number of mini batches
+image_folder = "lenia3" 
+current_model_name = "lenia"
+loaded_model_name = "lenia"  
+resolution = 50  
+batch_size = 2  
+num_batches = 12 
 
 train = True  
 visualize = True
-print_interval=1 # Print every x epoch
-print_lr=False # Print learning rate
+print_interval = 1 
+print_lr = False
 
-
-val_ratio = 0.10  # Percent of the last frames to use for validation
-training_phases = 9999999999999999  # Number of training epochs
-save_interval = 9999999999999999 # Save every x epoch, if you want to train without visualizing you can save regularly here.
-
-
+val_ratio = 0.10  
+training_phases = 9999999999999999  
+save_interval = 9999999999999999 
 
 # ODE settings
-integration_time = 0.0001  # Initial time horizon for ODE integration
-integration_time_increase_rate = 0.000
+use_ode = True 
+integration_time = 0.0001  
+integration_time_increase_rate = 0.001
 max_integration_time = 2.0
 ODE_method = "dopri5"
-
 
 
 # Pygame setting
 cell_size = 2
 FPS = 260 
 
-
-
 # CUDA settings
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(f"Using device: {device}")  # Print the device being used
+print(f"Using device: {device}") 
 
 # Initialize pygame
 pygame.init()
-
 
 RESOLUTION_WIDTH, RESOLUTION_HEIGHT = resolution, resolution
 WIDTH = RESOLUTION_WIDTH * cell_size
 HEIGHT = RESOLUTION_HEIGHT * cell_size
 GRID_WIDTH = RESOLUTION_WIDTH
 GRID_HEIGHT = RESOLUTION_HEIGHT
-
 
 # Function to draw on the grid
 def draw_on_grid(mouse_pos, color):
@@ -96,15 +83,15 @@ def draw_on_grid(mouse_pos, color):
         grid[y, x] = color
 
 # Simulation loop 
-def simulation_loop(model,state_size):
+def simulation_loop(model, state_size):
     running = True
     clear_grid = False
     drawing = False
     drawing_paused = False
     simulation_paused = False
     manual_pause = False
-    state = torch.zeros((1, state_size), dtype=torch.float32).to(device) # Initialize state
-    selected_color = (1.0, 1.0, 1.0)  # Initialize selected color to white   
+    state = torch.zeros((1, state_size), dtype=torch.float32).to(device) 
+    selected_color = (1.0, 1.0, 1.0)   
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -165,7 +152,10 @@ def simulation_loop(model,state_size):
 
             if not drawing_paused and not simulation_paused:
                 grid_tensor = torch.tensor(grid, dtype=torch.float32).permute(2, 0, 1).unsqueeze(0).to(device)
-                predicted_state = model(grid_tensor, state, integration_time).squeeze(0).permute(1, 2, 0).cpu().detach().numpy()  # Pass integration_time
+                if use_ode:
+                    predicted_state = model(grid_tensor, state, integration_time).squeeze(0).permute(1, 2, 0).cpu().detach().numpy()  # Pass integration_time
+                else:
+                    predicted_state = model(grid_tensor, state).squeeze(0).permute(1, 2, 0).cpu().detach().numpy() 
                 grid[:] = predicted_state
 
 
@@ -180,22 +170,16 @@ def simulation_loop(model,state_size):
 
     pygame.quit()
 
-
-
-      
-def train_model(model, train_loader, val_loader, epochs, state_size, 
-                integration_time=integration_time,
-                noise_std=noise_std):
-
+def train_model(model, train_loader, val_loader, epochs, state_size):
+    global integration_time # Make integration_time a global variable
     model.to(device)
     optimizer = optim.Adam(model.parameters(), lr=lr)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=lr_decrease_rate, patience=patience, min_lr=min_lr) 
     criterion = nn.MSELoss()
     
-    # Calculate the number of learnable parameters
     total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"Number of learnable parameters: {total_params}")
-    # Training loop
+
     for epoch in range(epochs):
         epoch_loss = 0.0
         val_loss = 0.0
@@ -204,7 +188,7 @@ def train_model(model, train_loader, val_loader, epochs, state_size,
             torch.save(model.state_dict(), f"{current_model_name}.pt")
             print("saved model")
 
-        if (integration_time <= max_integration_time):
+        if (integration_time <= max_integration_time and use_ode):
             integration_time += integration_time_increase_rate
             if (integration_time_increase_rate != 0):
                 print("current integration time:", integration_time)
@@ -227,33 +211,27 @@ def train_model(model, train_loader, val_loader, epochs, state_size,
             noise = torch.randn_like(batch_x) * noise_std
             batch_x_noisy = torch.clamp(batch_x + noise, 0.0, 1.0)
 
-            state = torch.zeros((batch_x.shape[0], state_size * 3), dtype=torch.float32).to(device)
+            state = torch.zeros((batch_x.shape[0], state_size), dtype=torch.float32).to(device)
             
             optimizer.zero_grad()
 
-            state = odeint(model.ode_func, state,
-                           torch.tensor([0.0, integration_time]).to(device),
-                           method=ODE_method).to(device)[-1]
-
-            state_short_expanded = state[:, :state_size].view(-1, state_size, 1, 1).expand(-1, state_size, batch_x_noisy.shape[2], batch_x_noisy.shape[3])
-            state_medium_expanded = state[:, state_size:2 * state_size].view(-1, state_size, 1, 1).expand(-1, state_size, batch_x_noisy.shape[2], batch_x_noisy.shape[3])
-            state_long_expanded = state[:, 2 * state_size:].view(-1, state_size, 1, 1).expand(-1, state_size, batch_x_noisy.shape[2], batch_x_noisy.shape[3])
+            if use_ode:
+                state = odeint(model.ode_func, state,
+                               torch.tensor([0.0, integration_time]).to(device),
+                               method=ODE_method).to(device)[-1]
+                state_expanded = state.view(-1, state_size, 1, 1).expand(-1, state_size, batch_x_noisy.shape[2], batch_x_noisy.shape[3])
+            else:
+                state_expanded = state.view(-1, state_size, 1, 1).expand(-1, state_size, batch_x_noisy.shape[2], batch_x_noisy.shape[3])
             
-            x = torch.cat((batch_x_noisy, state_short_expanded, state_medium_expanded, state_long_expanded), dim=1)
+            x = torch.cat((batch_x_noisy, state_expanded), dim=1)
             outputs = model.conv_layers(x)
 
             loss = criterion(outputs, batch_y)
             error = batch_y - outputs
 
-            state_update_short = model.state_update_short(error.reshape(batch_x_noisy.shape[0], -1))
-            state_update_medium = model.state_update_medium(error.reshape(batch_x_noisy.shape[0], -1))
-            state_update_long = model.state_update_long(error.reshape(batch_x_noisy.shape[0], -1))
+            state_update = model.state_update(error.reshape(batch_x_noisy.shape[0], -1))
 
-            # Update the state
-            state_short = state_update_short
-            state_medium = state_update_medium
-            state_long = state_update_long
-            state = torch.cat([state_short, state_medium, state_long], dim=1)
+            state = state_update 
 
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
@@ -271,16 +249,16 @@ def train_model(model, train_loader, val_loader, epochs, state_size,
                 noise = torch.randn_like(batch_x) * noise_std
                 batch_x_noisy = torch.clamp(batch_x + noise, 0.0, 1.0)
 
-                state = torch.zeros((batch_x.shape[0], state_size * 3), dtype=torch.float32).to(device)
+                state = torch.zeros((batch_x.shape[0], state_size), dtype=torch.float32).to(device)
 
-                state = odeint(model.ode_func, state,
-                               torch.tensor([0.0, integration_time]).to(device),
-                               method=ODE_method).to(device)[-1]
-
-                state_short_expanded = state[:, :state_size].view(-1, state_size, 1, 1).expand(-1, state_size, batch_x_noisy.shape[2], batch_x_noisy.shape[3])
-                state_medium_expanded = state[:, state_size:2 * state_size].view(-1, state_size, 1, 1).expand(-1, state_size, batch_x_noisy.shape[2], batch_x_noisy.shape[3])
-                state_long_expanded = state[:, 2 * state_size:].view(-1, state_size, 1, 1).expand(-1, state_size, batch_x_noisy.shape[2], batch_x_noisy.shape[3])
-                x = torch.cat((batch_x_noisy, state_short_expanded, state_medium_expanded, state_long_expanded), dim=1)
+                if use_ode:
+                    state = odeint(model.ode_func, state,
+                                   torch.tensor([0.0, integration_time]).to(device),
+                                   method=ODE_method).to(device)[-1]
+                    state_expanded = state.view(-1, state_size, 1, 1).expand(-1, state_size, batch_x_noisy.shape[2], batch_x_noisy.shape[3])
+                else:
+                    state_expanded = state.view(-1, state_size, 1, 1).expand(-1, state_size, batch_x_noisy.shape[2], batch_x_noisy.shape[3])
+                x = torch.cat((batch_x_noisy, state_expanded), dim=1)
                 outputs = model.conv_layers(x)
 
                 loss = criterion(outputs, batch_y) 
@@ -325,13 +303,10 @@ def load_and_process_image(filepath):
 
 
 
-
-
-
 class CellularAutomataModel(nn.Module):
     def __init__(self, state_size, grid_width, grid_height, hidden_size, num_layers=num_layers, min_channels=min_channels, max_channels=max_channels): 
         super(CellularAutomataModel, self).__init__()
-        self.state_size = state_size * 3
+        self.state_size = state_size
         self.grid_width = grid_width
         self.grid_height = grid_height
         self.hidden_size = hidden_size
@@ -366,42 +341,29 @@ class CellularAutomataModel(nn.Module):
         self.conv_layers = nn.Sequential(*conv_layers)
 
 
-        self.state_update_short = nn.Sequential(
-            nn.Linear(3 * grid_width * grid_height, hidden_size).cuda(),
-            nn.ReLU().cuda(),
-            nn.Linear(hidden_size, state_size).cuda(),
-            nn.Tanh().cuda()
-        )
-        self.state_update_medium = nn.Sequential(
-            nn.Linear(3 * grid_width * grid_height, hidden_size).cuda(),
-            nn.ReLU().cuda(),
-            nn.Linear(hidden_size, state_size).cuda(),
-            nn.Tanh().cuda()
-        )
-        self.state_update_long = nn.Sequential(
+        self.state_update = nn.Sequential(
             nn.Linear(3 * grid_width * grid_height, hidden_size).cuda(),
             nn.ReLU().cuda(),
             nn.Linear(hidden_size, state_size).cuda(),
             nn.Tanh().cuda()
         )
 
-        self.ode_net = nn.Sequential(
-            nn.Linear(self.state_size, hidden_size).cuda(),
-            nn.ReLU().cuda(),
-            nn.Linear(hidden_size, self.state_size).cuda()
-        )
-        self.ode_func = lambda t, y: self.ode_net(y)
+        if use_ode:
+            self.ode_net = nn.Sequential(
+                nn.Linear(self.state_size, hidden_size).cuda(),
+                nn.ReLU().cuda(),
+                nn.Linear(hidden_size, self.state_size).cuda()
+            )
+            self.ode_func = lambda t, y: self.ode_net(y)
 
-    def forward(self, x, state, integration_time):
-        # Move time tensor to the same device as the state
-        t = torch.tensor([0.0, integration_time]).to(state.device)
+    def forward(self, x, state, integration_time=None):
 
-        state = odeint(self.ode_func, state, t, method="dopri5")[-1]
+        if use_ode and integration_time is not None:
+            t = torch.tensor([0.0, integration_time]).to(state.device)
+            state = odeint(self.ode_func, state, t, method=ODE_method)[-1]
 
-        state_short_expanded = state[:, :self.state_size // 3].view(-1, self.state_size // 3, 1, 1).expand(-1, self.state_size // 3, x.shape[2], x.shape[3])
-        state_medium_expanded = state[:, self.state_size // 3:2 * self.state_size // 3].view(-1, self.state_size // 3, 1, 1).expand(-1, self.state_size // 3, x.shape[2], x.shape[3])
-        state_long_expanded = state[:, 2 * self.state_size // 3:].view(-1, self.state_size // 3, 1, 1).expand(-1, self.state_size // 3, x.shape[2], x.shape[3])
-        x = torch.cat((x, state_short_expanded, state_medium_expanded, state_long_expanded), dim=1)
+        state_expanded = state.view(-1, self.state_size, 1, 1).expand(-1, self.state_size, x.shape[2], x.shape[3])
+        x = torch.cat((x, state_expanded), dim=1)
 
         return self.conv_layers(x)
 
@@ -486,13 +448,13 @@ if visualize:
     # Create a drawing buffer
     drawing_buffer = np.zeros_like(grid) 
 
-    simulation_loop(model, state_size * 3)
+    simulation_loop(model, state_size)
 elif not train and not visualize:
     print("Neither training nor visualization is enabled.  Exiting.")
 elif train and visualize:
     # Initialize the grid with the first state from the dataset
     grid = initial_states[0].copy()
-    simulation_loop(model, state_size * 3) 
+    simulation_loop(model, state_size) 
 
 if train:
     training_thread.join()  # Wait for training to finish before exiting.
